@@ -1,0 +1,223 @@
+================================================================================
+                     PLAN DE DIRECCIONAMIENTO - PARCIAL 1
+                  FortiGate / Cisco / GNS3 - VPN Site-to-Site
+================================================================================
+
+Repositorio:
+Carlos-2140/parcial-1-fortigate-cisco-vpn
+
+--------------------------------------------------------------------------------
+1. RED FÍSICA / CLOUD
+--------------------------------------------------------------------------------
+
+Red física / Cloud1:
+Red:                 192.168.18.0/24
+Gateway físico:      192.168.18.1
+
+ISP-R1 - Fa0/0:
+Método:              DHCP
+IP actual:           192.168.18.178/24
+Descripción:         HACIA-CLOUD-INTERNET
+NAT:                 outside
+
+Nota:
+La dirección 192.168.18.178 corresponde al lease DHCP utilizado durante las
+pruebas. Puede variar si el router ISP vuelve a solicitar DHCP.
+
+--------------------------------------------------------------------------------
+2. ENLACE ISP <-> FORTIGATE
+--------------------------------------------------------------------------------
+
+Red:                 198.51.100.0/30
+Máscara:             255.255.255.252
+
+ISP-R1:
+Interfaz:            FastEthernet1/0
+IP:                  198.51.100.1/30
+Descripción:         HACIA-FORTIGATE
+NAT:                 inside
+
+FortiGate:
+Interfaz:            port1
+IP:                  198.51.100.2/30
+Gateway:             198.51.100.1
+Rol:                 WAN
+
+Ruta por defecto del FortiGate:
+Destino:             0.0.0.0/0
+Gateway:             198.51.100.1
+Interfaz:            port1
+
+--------------------------------------------------------------------------------
+3. SEDE PRINCIPAL - VLAN 10 USUARIOS
+--------------------------------------------------------------------------------
+
+VLAN ID:             10
+Nombre:              USUARIOS
+Red:                 10.21.40.0/25
+Máscara:             255.255.255.128
+Gateway:             10.21.40.1
+
+FortiGate:
+Subinterfaz:         VLAN10-USUARIOS
+Interfaz padre:      port2
+IP:                  10.21.40.1/25
+DHCP:                Habilitado
+
+Rango DHCP:
+Inicio:              10.21.40.10
+Fin:                 10.21.40.100
+Gateway DHCP:        10.21.40.1
+DNS 1:               8.8.8.8
+DNS 2:               1.1.1.1
+
+PC Usuario-1:
+IP obtenida DHCP:    10.21.40.10/25
+Gateway:             10.21.40.1
+Switchport:          SW-SEDE Gi0/1
+Modo:                Access VLAN 10
+
+--------------------------------------------------------------------------------
+4. SEDE PRINCIPAL - VLAN 20 ADMIN
+--------------------------------------------------------------------------------
+
+VLAN ID:             20
+Nombre:              ADMIN
+Red:                 10.21.41.0/25
+Máscara:             255.255.255.128
+Gateway:             10.21.41.1
+
+FortiGate:
+Subinterfaz:         VLAN20-ADMIN
+Interfaz padre:      port2
+IP:                  10.21.41.1/25
+
+PC Usuario-2 / Admin:
+IP:                  10.21.41.10/25
+Gateway:             10.21.41.1
+DNS 1:               8.8.8.8
+DNS 2:               1.1.1.1
+Switchport:          SW-SEDE Gi0/2
+Modo:                Access VLAN 20
+
+--------------------------------------------------------------------------------
+5. TRUNK SEDE PRINCIPAL
+--------------------------------------------------------------------------------
+
+SW-SEDE:
+Puerto trunk:        Gi0/0
+Encapsulación:       802.1Q
+Native VLAN:         999
+VLAN permitidas:     10,20,999
+
+FortiGate:
+Puerto físico:       port2
+Uso:                 Interfaz padre de VLAN10-USUARIOS y VLAN20-ADMIN
+
+--------------------------------------------------------------------------------
+6. ENLACE ISP <-> R-SUCURSAL
+--------------------------------------------------------------------------------
+
+Red:                 203.0.113.0/30
+Máscara:             255.255.255.252
+
+ISP-R1:
+Interfaz:            FastEthernet0/1
+IP:                  203.0.113.1/30
+Descripción:         HACIA-R-SUCURSAL
+NAT:                 inside
+
+R-SUCURSAL:
+Interfaz:            FastEthernet0/0
+IP:                  203.0.113.2/30
+Gateway por defecto: 203.0.113.1
+
+--------------------------------------------------------------------------------
+7. RED DE SERVIDORES - SUCURSAL
+--------------------------------------------------------------------------------
+
+Red:                 10.21.40.128/28
+Máscara:             255.255.255.240
+Gateway:             10.21.40.129
+
+R-SUCURSAL:
+Interfaz:            FastEthernet0/1
+IP:                  10.21.40.129/28
+
+WEB-SRV:
+Hostname:            WEB-SRV
+Interfaz:            ens3
+IP:                  10.21.40.130/28
+Gateway:             10.21.40.129
+Servicio:            HTTP / TCP 80
+
+DB-SRV:
+Hostname:            DB-SRV
+Interfaz:            ens3
+IP:                  10.21.40.131/28
+Gateway:             10.21.40.129
+Servicio:            MariaDB / TCP 3306
+Bind:                0.0.0.0:3306
+
+--------------------------------------------------------------------------------
+8. VPN SITE-TO-SITE
+--------------------------------------------------------------------------------
+
+FortiGate:
+Peer local WAN:      198.51.100.2
+Peer remoto:         203.0.113.2
+Red local:           10.21.40.0/25
+Red remota:          10.21.40.128/28
+
+R-SUCURSAL:
+Peer local WAN:      203.0.113.2
+Peer remoto:         198.51.100.2
+Red local:           10.21.40.128/28
+Red remota:          10.21.40.0/25
+
+Parámetros:
+IKE:                 IKEv1
+Phase 1 Encryption:  DES
+Phase 1 Auth:        SHA1
+DH Group:            5
+Phase 1 Lifetime:    86400 s
+Phase 2 Encryption:  DES
+Phase 2 Auth:        SHA1
+PFS:                 Group 5
+Phase 2 Lifetime:    43200 s
+
+Ruta FortiGate hacia sucursal:
+Destino:             10.21.40.128/28
+Interfaz:            VPN-R-SUCURSAL
+
+--------------------------------------------------------------------------------
+9. RESUMEN DE REDES
+--------------------------------------------------------------------------------
+
+192.168.18.0/24      Red física / Cloud / salida a Internet
+198.51.100.0/30      Enlace ISP-R1 <-> FortiGate
+203.0.113.0/30       Enlace ISP-R1 <-> R-SUCURSAL
+10.21.40.0/25        VLAN 10 - Usuarios
+10.21.41.0/25        VLAN 20 - Administración
+10.21.40.128/28      Red de servidores de la sucursal
+
+--------------------------------------------------------------------------------
+10. RESUMEN DE DIRECCIONES PRINCIPALES
+--------------------------------------------------------------------------------
+
+ISP-R1 Fa0/0         192.168.18.178/24   DHCP / Cloud
+ISP-R1 Fa1/0         198.51.100.1/30     FortiGate
+FortiGate port1      198.51.100.2/30     WAN
+FortiGate VLAN10     10.21.40.1/25       Gateway usuarios
+Usuario-1            10.21.40.10/25      DHCP
+FortiGate VLAN20     10.21.41.1/25       Gateway administración
+Usuario-2            10.21.41.10/25      Estática
+ISP-R1 Fa0/1         203.0.113.1/30      R-SUCURSAL
+R-SUCURSAL Fa0/0     203.0.113.2/30      WAN sucursal
+R-SUCURSAL Fa0/1     10.21.40.129/28     Gateway servidores
+WEB-SRV              10.21.40.130/28     HTTP/80
+DB-SRV               10.21.40.131/28     MariaDB/3306
+
+================================================================================
+                                      FIN
+================================================================================
