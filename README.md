@@ -1,6 +1,6 @@
 # Parcial 1 — FortiGate + Cisco VPN Site-to-Site en GNS3
 
-> 🎥 **Video de demostración (YouTube): PENDIENTE — agregar el enlace antes de la entrega.**
+> 🎥 **Video de demostración (YouTube):** https://www.youtube.com/watch?v=AmfxQ1WURpc
 
 Laboratorio de redes y seguridad implementado en **GNS3** con **FortiGate 7.0.9**, equipos Cisco IOS, clientes Windows y servidores Ubuntu. El proyecto incluye VLANs, DHCP, salida real a Internet mediante NAT, filtrado web, políticas de firewall, una VPN IPsec Site-to-Site entre FortiGate y Cisco, servidor web y servidor MariaDB.
 
