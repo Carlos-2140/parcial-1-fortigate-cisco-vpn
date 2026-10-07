@@ -1,0 +1,149 @@
+================================================================================
+                            CONFIGURACIÓN DB-SRV
+================================================================================
+
+Proyecto   : Parcial 1 - FortiGate / Cisco VPN Site-to-Site
+Servidor   : DB-SRV
+Sistema    : Ubuntu Server
+Interfaz   : ens3
+Dirección  : 10.21.40.131/28
+Gateway    : 10.21.40.129
+Servicios  : MariaDB (3306) / SSH (22)
+Netplan    : /etc/netplan/50-cloud-init.yaml
+
+--------------------------------------------------------------------------------
+1. CONFIGURAR HOSTNAME
+--------------------------------------------------------------------------------
+
+sudo hostnamectl set-hostname DB-SRV
+
+
+--------------------------------------------------------------------------------
+2. CONFIGURAR RED ESTÁTICA
+--------------------------------------------------------------------------------
+
+Editar:
+
+sudo nano /etc/netplan/50-cloud-init.yaml
+
+Contenido:
+
+network:
+  version: 2
+  ethernets:
+    ens3:
+      dhcp4: false
+      addresses:
+        - 10.21.40.131/28
+      routes:
+        - to: default
+          via: 10.21.40.129
+      nameservers:
+        addresses:
+          - 8.8.8.8
+          - 1.1.1.1
+
+Aplicar:
+
+sudo chmod 600 /etc/netplan/50-cloud-init.yaml
+sudo netplan generate
+sudo netplan apply
+
+
+--------------------------------------------------------------------------------
+3. INSTALAR Y HABILITAR MARIADB + SSH
+--------------------------------------------------------------------------------
+
+sudo apt update
+sudo apt install -y mariadb-server openssh-server
+
+sudo systemctl enable --now mariadb
+sudo systemctl enable --now ssh
+
+
+--------------------------------------------------------------------------------
+4. CONFIGURAR MARIADB PARA ESCUCHAR EN TCP/3306
+--------------------------------------------------------------------------------
+
+Crear archivo:
+
+sudo nano /etc/mysql/mariadb.conf.d/60-parcial.cnf
+
+Contenido:
+
+[mysqld]
+bind-address = 0.0.0.0
+port = 3306
+
+Reiniciar servicio:
+
+sudo systemctl restart mariadb
+
+
+--------------------------------------------------------------------------------
+5. CREAR BASE DE DATOS DE PRUEBA
+--------------------------------------------------------------------------------
+
+Entrar a MariaDB:
+
+sudo mariadb
+
+Ejecutar:
+
+CREATE DATABASE IF NOT EXISTS laboratorio;
+
+USE laboratorio;
+
+CREATE TABLE IF NOT EXISTS prueba (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    mensaje VARCHAR(100)
+);
+
+INSERT INTO prueba (mensaje)
+VALUES ('MariaDB funcionando correctamente');
+
+SELECT * FROM prueba;
+
+EXIT;
+
+
+--------------------------------------------------------------------------------
+6. VERIFICACIONES
+--------------------------------------------------------------------------------
+
+hostname
+ip -br addr
+ip route
+sudo systemctl status mariadb --no-pager
+sudo ss -lntp | grep -E ':22|:3306'
+
+Prueba de gateway:
+
+ping -c 4 10.21.40.129
+
+
+--------------------------------------------------------------------------------
+7. RESULTADO ESPERADO
+--------------------------------------------------------------------------------
+
+Hostname:
+DB-SRV
+
+Dirección:
+10.21.40.131/28
+
+Gateway:
+10.21.40.129
+
+Servicios:
+TCP/22    -> SSH
+TCP/3306  -> MariaDB
+
+Salida esperada de MariaDB:
+
+LISTEN ... 0.0.0.0:3306 ... mariadbd
+
+
+================================================================================
+                                FIN
+================================================================================

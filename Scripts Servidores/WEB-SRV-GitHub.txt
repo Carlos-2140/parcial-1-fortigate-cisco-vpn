@@ -1,0 +1,165 @@
+================================================================================
+                           CONFIGURACIÓN WEB-SRV
+================================================================================
+
+Proyecto   : Parcial 1 - FortiGate / Cisco VPN Site-to-Site
+Servidor   : WEB-SRV
+Sistema    : Ubuntu Server
+Interfaz   : ens3
+Dirección  : 10.21.40.130/28
+Gateway    : 10.21.40.129
+Servicios  : HTTP (80) / SSH (22)
+Netplan    : /etc/netplan/50-cloud-init.yaml
+
+--------------------------------------------------------------------------------
+1. CONFIGURAR HOSTNAME
+--------------------------------------------------------------------------------
+
+sudo hostnamectl set-hostname WEB-SRV
+
+
+--------------------------------------------------------------------------------
+2. CONFIGURAR RED ESTÁTICA
+--------------------------------------------------------------------------------
+
+Editar:
+
+sudo nano /etc/netplan/50-cloud-init.yaml
+
+Contenido:
+
+network:
+  version: 2
+  ethernets:
+    ens3:
+      dhcp4: false
+      addresses:
+        - 10.21.40.130/28
+      routes:
+        - to: default
+          via: 10.21.40.129
+      nameservers:
+        addresses:
+          - 8.8.8.8
+          - 1.1.1.1
+
+Aplicar:
+
+sudo chmod 600 /etc/netplan/50-cloud-init.yaml
+sudo netplan generate
+sudo netplan apply
+
+
+--------------------------------------------------------------------------------
+3. INSTALAR Y HABILITAR NGINX + SSH
+--------------------------------------------------------------------------------
+
+sudo apt update
+sudo apt install -y nginx openssh-server
+
+sudo systemctl enable --now nginx
+sudo systemctl enable --now ssh
+
+
+--------------------------------------------------------------------------------
+4. CREAR PÁGINA PRINCIPAL
+--------------------------------------------------------------------------------
+
+Editar:
+
+sudo nano /var/www/html/index.html
+
+Contenido:
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Parcial 1</title>
+</head>
+<body>
+    <h1>Servidor Web Operativo</h1>
+    <h2>PARCIAL 1</h2>
+    <p>WEB-SRV - 10.21.40.130</p>
+    <p>VPN FortiGate - Cisco funcionando correctamente.</p>
+</body>
+</html>
+
+
+--------------------------------------------------------------------------------
+5. CREAR SECCIÓN /inventario
+--------------------------------------------------------------------------------
+
+Crear directorio:
+
+sudo mkdir -p /var/www/html/inventario
+
+Editar:
+
+sudo nano /var/www/html/inventario/index.html
+
+Contenido:
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Inventario</title>
+</head>
+<body>
+    <h1>INVENTARIO</h1>
+    <p>Esta sección debe ser bloqueada para los usuarios de VLAN 10.</p>
+</body>
+</html>
+
+Reiniciar Nginx:
+
+sudo systemctl restart nginx
+
+
+--------------------------------------------------------------------------------
+6. VERIFICACIONES
+--------------------------------------------------------------------------------
+
+hostname
+ip -br addr
+ip route
+sudo ss -lntp | grep -E ':22|:80'
+
+Pruebas locales:
+
+curl http://127.0.0.1
+curl http://127.0.0.1/inventario/
+
+Prueba de gateway:
+
+ping -c 4 10.21.40.129
+
+
+--------------------------------------------------------------------------------
+7. RESULTADO ESPERADO
+--------------------------------------------------------------------------------
+
+Hostname:
+WEB-SRV
+
+Dirección:
+10.21.40.130/28
+
+Gateway:
+10.21.40.129
+
+Servicios:
+TCP/22  -> SSH
+TCP/80  -> Nginx / HTTP
+
+Página principal:
+http://10.21.40.130
+
+Sección protegida por Web Filter:
+http://10.21.40.130/inventario/
+
+
+================================================================================
+                                FIN
+================================================================================
