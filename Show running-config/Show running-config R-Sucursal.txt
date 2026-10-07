@@ -1,0 +1,99 @@
+Show running-config R-Sucursal
+
+R-SUCURSAL#show running-config
+Building configuration...
+
+Current configuration : 1430 bytes
+!
+version 12.4
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+hostname R-SUCURSAL
+!
+boot-start-marker
+boot-end-marker
+!
+!
+no aaa new-model
+memory-size iomem 5
+no ip icmp rate-limit unreachable
+ip cef
+!
+!
+ip auth-proxy max-nodata-conns 3
+ip admission max-nodata-conns 3
+!
+!
+no ip domain lookup
+!
+!
+!
+!
+!
+!
+ip tcp synwait-time 5
+!
+!
+crypto isakmp policy 10
+ authentication pre-share
+ group 5
+crypto isakmp key Carlos2140 address 198.51.100.2
+!
+!
+crypto ipsec transform-set FGT-SET esp-des esp-sha-hmac
+!
+crypto map VPN-MAP 10 ipsec-isakmp
+ set peer 198.51.100.2
+ set security-association lifetime seconds 43200
+ set transform-set FGT-SET
+ set pfs group5
+ match address VPN-TRAFFIC
+!
+!
+!
+interface FastEthernet0/0
+ description HACIA-ISP
+ ip address 203.0.113.2 255.255.255.252
+ duplex auto
+ speed auto
+ crypto map VPN-MAP
+!
+interface FastEthernet0/1
+ description RED-SERVIDORES
+ ip address 10.21.40.129 255.255.255.240
+ duplex auto
+ speed auto
+!
+ip forward-protocol nd
+ip route 0.0.0.0 0.0.0.0 203.0.113.1
+!
+no ip http server
+no ip http secure-server
+!
+ip access-list extended VPN-TRAFFIC
+ permit ip 10.21.40.128 0.0.0.15 10.21.40.0 0.0.0.127
+!
+no cdp log mismatch duplex
+!
+!
+control-plane
+!
+!
+!
+!
+line con 0
+ exec-timeout 0 0
+ privilege level 15
+ logging synchronous
+line aux 0
+ exec-timeout 0 0
+ privilege level 15
+ logging synchronous
+line vty 0 4
+ login
+!
+!
+end
+

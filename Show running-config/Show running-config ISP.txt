@@ -1,0 +1,121 @@
+Show running-config ISP
+
+ISP-R1#show running-config
+Building configuration...
+
+Current configuration : 1952 bytes
+!
+version 12.4
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+hostname ISP-R1
+!
+boot-start-marker
+boot-end-marker
+!
+!
+no aaa new-model
+memory-size iomem 5
+no ip icmp rate-limit unreachable
+ip cef
+!
+!
+ip auth-proxy max-nodata-conns 3
+ip admission max-nodata-conns 3
+no ip dhcp use vrf connected
+ --More--
+*Mar  1 00:08:33.051: %DHCP-5-RESTART: Interface FastEthernet0/0 is being restarted by DHCP
+
+ip dhcp excluded-address 198.51.100.1
+!
+ip dhcp pool FORTIGATE-WAN
+   network 198.51.100.0 255.255.255.252
+   default-router 198.51.100.1
+   dns-server 8.8.8.8
+!
+ --More--
+*Mar  1 00:08:35.051: %LINK-5-CHANGED: Interface FastEthernet0/0, changed state to administratively down
+!
+no ip domain lookup
+!
+!
+!
+!
+!
+!
+ip tcp synwait-time 5
+!
+!
+!
+!
+interface FastEthernet0/0
+ description HACIA-CLOUD-INTERNET
+ ip address dhcp
+ ip nat outside
+ ip virtual-reassembly
+ shutdown
+ duplex auto
+ speed auto
+!
+interface FastEthernet0/1
+ description HACIA-R-SUCURSAL
+ ip address 203.0.113.1 255.255.255.252
+ ip nat inside
+ ip virtual-reassembly
+ duplex auto
+ speed auto
+!
+interface FastEthernet1/0
+ description HACIA-FORTIGATE
+ ip address 198.51.100.1 255.255.255.252
+ ip nat inside
+ ip virtual-reassembly
+ duplex auto
+ speed auto
+!
+ip forward-protocol nd
+!
+no ip http server
+no ip http secure-server
+ip nat inside source route-map NAT-TO-INTERNET interface FastEthernet0/0 overload
+!
+    ore--
+*Mar  1 00:08:38.051: %LINK-3-UPDOWN: Interface FastEthernet0/0, changed state tip access-list standard NAT-INTERNET
+ permit 198.51.100.0 0.0.0.3
+ permit 203.0.113.0 0.0.0.3
+ permit 10.21.40.128 0.0.0.15
+!
+ip access-list extended NAT-OVERLOAD
+ deny   ip 198.51.100.0 0.0.0.3 203.0.113.0 0.0.0.3
+ deny   ip 203.0.113.0 0.0.0.3 198.51.100.0 0.0.0.3
+ deny   ip 198.51.100.0 0.0.0.3 192.168.18.0 0.0.0.255
+ deny   ip 203.0.113.0 0.0.0.3 192.168.18.0 0.0.0.255
+ permit ip 198.51.100.0 0.0.0.3 any
+ permit ip 203.0.113.0 0.0.0.3 any
+!
+no cdp log mismatch duplex
+route-map NAT-TO-INTERNET permit 10
+ match ip address NAT-OVERLOAD
+!
+!
+!
+control-plane
+!
+!
+!
+!
+line con 0
+ exec-timeout 0 0
+ privilege level 15
+ logging synchronous
+line aux 0
+ exec-timeout 0 0
+ privilege level 15
+ logging synchronous
+line vty 0 4
+ login
+!
+!
+end
